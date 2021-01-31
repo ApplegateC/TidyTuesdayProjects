@@ -1,0 +1,140 @@
+---
+title: "Art Collection"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+install.packages("tidyverse")
+install.packages("tidytuesdayR")
+install.packages("magrittr")
+library(tidyverse)
+library(tidytuesdayR)
+library(magrittr)
+
+tuesdata <- tidytuesdayR::tt_load('2021-01-12')
+
+artwork <- tuesdata$artwork
+artists <- tuesdata$artists
+
+View(artwork)
+artwork
+```
+
+```{r}
+a <- c(1500,1550,1600,1650,1700,1750,1800,1850,1900,1950,2000,2050)
+b <- c('1500s','1550s','1600s','1650s','1700s','1750s','1800s','1850s','1900s','1950s','2000s')
+
+##Number of art pieces in the Tate's collection by Half-Century
+
+artwork %>% 
+  filter(!is.na(year)) %>%
+  mutate(Century = cut(year, breaks = a, labels = b)) %>%
+  count(Century) %>% 
+  ggplot(aes(Century,n)) +
+  geom_col()
+
+##Number of art pieces in the Tate's collection by year
+  
+artwork %>% 
+  filter(!is.na(year)) %>%
+  count(year) %>% 
+  ggplot(aes(year,n)) +
+  geom_line()
+
+##Average time in years to acquire a piece of art from a given year
+
+artwork %>% 
+  filter(!is.na(year)) %>%
+  mutate(Diff = acquisitionYear-year) %>%
+  filter(Diff > 0) %>%
+  group_by(year) %>%
+  summarise(avg = mean(Diff)) %>%
+  ggplot(aes(year,avg)) +
+  geom_line() +
+  geom_smooth(se = FALSE) +
+  labs(x = 'Year', y = 'Average Time (In Years) to acquire art from that year')
+
+##Average year of creation for art acquired in that year.
+
+artwork %>% 
+  filter(!is.na(year)) %>%
+  group_by(acquisitionYear) %>%
+  summarise(avg = mean(year)) %>%
+  ggplot(aes(acquisitionYear,avg)) +
+  geom_line() +
+  geom_smooth(se = FALSE) +
+  labs(x = 'Acquisition Year', y = 'Average age of artwork acquired (in years)')
+```
+
+```{r}
+##Size of artwork by year created
+
+artwork %>%
+  filter(!is.na(units),!is.na(height),!is.na(width),!is.na(year)) %>%
+  mutate(area = height * width) %>%
+  ggplot(aes(year, area)) +
+  geom_point() +
+  scale_y_continuous(labels = scales::comma) +
+  labs(x = 'Year Created', y = expression(paste('Area (',"mm"^"2",')')))
+
+## Viewing the largest 25 artworks in the Tate's collection
+  
+artwork %>%
+  filter(!is.na(units)) %>%
+  mutate(area = height * width) %>%
+  arrange(desc(area)) %>%
+  head(25) %>%
+  view()
+
+c <- c(1500,1600,1700,1800,1900,2000,2050)
+d <- c('1500s','1600s','1700s','1800s','1900s','2000s')
+
+##Viewing the most popular media of art at the Tate
+
+artwork %>%
+  count(medium) %>%
+  filter(!is.na(medium)) %>%
+  ##filter(n > 100) %>%
+  arrange(desc(n)) %>%
+  view()
+
+##artwork %>%
+  ##filter(!is.na(medium)) %>%
+  ##filter(!is.na(acquisitionYear), medium == 'Graphite on paper') %>%
+  ##filter(medium == 'Graphite on paper') %>%
+  ##mutate(Century = cut(acquisitionYear,breaks = c, labels = d )) %>%
+  ##count(Century)
+
+artwork %>%
+  #filter(!is.na(medium)) %>%
+  filter(!is.na(year)) %>%
+  filter(medium %in% c('Graphite on paper', 'Oil paint on canvas', 'Screenprint on paper','Lithograph on paper', 'Watercolour on paper', 'Etching on paper', 'Graphite and watercolour on paper')) %>%
+  mutate(Century = cut(year,breaks = c, labels = d )) %>%
+  ggplot(aes(Century, fill = medium)) +
+  geom_bar(position = "dodge")
+
+artwork %>%
+  count(artist, sort = TRUE) %>%
+  head(10)
+
+artwork %>% 
+  filter(!is.na(year),artist == "Turner, Joseph Mallord William") %>%
+  count(year) %>% 
+  ggplot(aes(year,n)) +
+  geom_line()
+
+artwork %>% 
+  filter(!is.na(year),artist == "Turner, Joseph Mallord William") %>%
+  count(acquisitionYear) %>% 
+  ggplot(aes(acquisitionYear,n)) +
+  geom_line()
+```
+
+
+
